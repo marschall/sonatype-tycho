@@ -57,7 +57,7 @@ public class DefaultTargetPlatformTest
     private void addArtifact( DefaultTargetPlatform tp, String type, String id, String version )
     {
         ArtifactKey key = new DefaultArtifactKey( type, id, version );
-        tp.addArtifactFile( key, new File( version ) );
+        tp.addArtifactFile( key, new File( version ), null );
     }
 
     public void testRelativePath()
@@ -68,8 +68,8 @@ public class DefaultTargetPlatformTest
         File relative = new File( "relative.xml" );
         File canonical = new File( "canonical.xml" );
 
-        tp.addArtifactFile( new DefaultArtifactKey( "foo", "relative", "1" ), relative );
-        tp.addArtifactFile( new DefaultArtifactKey( "foo", "canonical", "1" ), canonical.getCanonicalFile() );
+        tp.addArtifactFile( new DefaultArtifactKey( "foo", "relative", "1" ), relative, null );
+        tp.addArtifactFile( new DefaultArtifactKey( "foo", "canonical", "1" ), canonical.getCanonicalFile(), null );
 
         Assert.assertNotNull( tp.getArtifact( relative.getCanonicalFile() ) );
         Assert.assertNotNull( tp.getArtifact( canonical ) );

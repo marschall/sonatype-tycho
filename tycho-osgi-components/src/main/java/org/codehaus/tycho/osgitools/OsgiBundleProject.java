@@ -79,7 +79,8 @@ public class OsgiBundleProject
                     File location = artifact.getLocation();
                     MavenProject project = artifact.getMavenProject();
 
-                    PluginDescription plugin = new DefaultPluginDescription( key, location, project, null );
+                    PluginDescription plugin =
+                        new DefaultPluginDescription( key, location, project, null, artifact.getInstallableUnits() );
 
                     visitor.visitPlugin( plugin );
                 }
@@ -124,7 +125,9 @@ public class OsgiBundleProject
                 + project.toString() );
         }
 
-        ArtifactKey key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() );
+        ArtifactKey key =
+            new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(),
+                                    version[0].getValue() );
         project.setContextValue( CTX_ARTIFACT_KEY, key );
     }
 
@@ -307,7 +310,8 @@ public class OsgiBundleProject
                     // Log and
                     continue;
                 }
-                ArtifactDescriptor matchingBundle = platform.getArtifact( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, bundleId, null );
+                ArtifactDescriptor matchingBundle =
+                    platform.getArtifact( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, bundleId, null );
                 if ( matchingBundle != null )
                 {
                     List<File> locations;

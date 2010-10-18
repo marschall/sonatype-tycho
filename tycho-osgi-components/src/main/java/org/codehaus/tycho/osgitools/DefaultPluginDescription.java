@@ -1,6 +1,7 @@
 package org.codehaus.tycho.osgitools;
 
 import java.io.File;
+import java.util.Set;
 
 import org.apache.maven.project.MavenProject;
 import org.codehaus.tycho.PluginDescription;
@@ -14,9 +15,10 @@ public class DefaultPluginDescription
 
     private PluginRef pluginRef;
 
-    public DefaultPluginDescription( ArtifactKey key, File location, MavenProject project, PluginRef pluginRef )
+    public DefaultPluginDescription( ArtifactKey key, File location, MavenProject project, PluginRef pluginRef,
+                                     Set<Object> installableUnits )
     {
-        super( key, location, project );
+        super( key, location, project, installableUnits );
         this.pluginRef = pluginRef;
     }
 

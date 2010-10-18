@@ -33,7 +33,8 @@ public class DefaultTargetPlatform
     private static final WeakHashMap<ArtifactKey, ArtifactDescriptor> ARTIFACT_CACHE =
         new WeakHashMap<ArtifactKey, ArtifactDescriptor>();
 
-    protected final Map<ArtifactKey, ArtifactDescriptor> artifacts = new LinkedHashMap<ArtifactKey, ArtifactDescriptor>();
+    protected final Map<ArtifactKey, ArtifactDescriptor> artifacts =
+        new LinkedHashMap<ArtifactKey, ArtifactDescriptor>();
 
     protected final Map<File, ArtifactDescriptor> locations = new LinkedHashMap<File, ArtifactDescriptor>();
 
@@ -58,9 +59,9 @@ public class DefaultTargetPlatform
         return new ArrayList<ArtifactDescriptor>( artifacts.values() );
     }
 
-    public void addArtifactFile( ArtifactKey key, File location )
+    public void addArtifactFile( ArtifactKey key, File location, Set<Object> installableUnits )
     {
-        addArtifact( new DefaultArtifactDescriptor( key, location, null ) );
+        addArtifact( new DefaultArtifactDescriptor( key, location, null, installableUnits ) );
     }
 
     public void addArtifact( ArtifactDescriptor artifact )
@@ -101,7 +102,8 @@ public class DefaultTargetPlatform
             File location = artifact.getLocation().getCanonicalFile();
             if ( !location.equals( artifact.getLocation() ) )
             {
-                return new DefaultArtifactDescriptor( artifact.getKey(), location, artifact.getMavenProject() );
+                return new DefaultArtifactDescriptor( artifact.getKey(), location, artifact.getMavenProject(),
+                                                      artifact.getInstallableUnits() );
             }
             return artifact;
         }
@@ -117,7 +119,9 @@ public class DefaultTargetPlatform
         if ( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_TEST_PLUGIN.equals( key.getType() ) )
         {
             // normalize eclipse-test-plugin... after all, a bundle is a bundle.
-            key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, key.getId(), key.getVersion() );
+            key =
+                new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, key.getId(),
+                                        key.getVersion() );
         }
         return key;
     }
@@ -213,9 +217,9 @@ public class DefaultTargetPlatform
         return v1.getMajor() == v2.getMajor() && v1.getMinor() == v2.getMinor() && v1.getMicro() == v2.getMicro();
     }
 
-    public void addMavenProject( ArtifactKey key, MavenProject project )
+    public void addMavenProject( ArtifactKey key, MavenProject project, Set<Object> installableUnits )
     {
-        DefaultArtifactDescriptor artifact = new DefaultArtifactDescriptor( key, project.getBasedir(), project );
+        DefaultArtifactDescriptor artifact = new DefaultArtifactDescriptor( key, project.getBasedir(), project, installableUnits );
         addArtifact( artifact );
     }
 

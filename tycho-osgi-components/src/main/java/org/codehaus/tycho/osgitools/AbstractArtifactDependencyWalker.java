@@ -76,7 +76,7 @@ public abstract class AbstractArtifactDependencyWalker
         MavenProject project = artifact.getMavenProject();
 
         DefaultFeatureDescription description =
-            new DefaultFeatureDescription( key, location, project, feature, featureRef );
+            new DefaultFeatureDescription( key, location, project, feature, featureRef, artifact.getInstallableUnits() );
 
         if ( visitor.visitFeature( description ) )
         {
@@ -223,7 +223,8 @@ public abstract class AbstractArtifactDependencyWalker
             File location = artifact.getLocation();
 
             MavenProject project = platform.getMavenProject( location );
-            PluginDescription description = new DefaultPluginDescription( key, location, project, ref );
+            PluginDescription description =
+                new DefaultPluginDescription( key, location, project, ref, artifact.getInstallableUnits() );
             visited.enter( description );
             try
             {

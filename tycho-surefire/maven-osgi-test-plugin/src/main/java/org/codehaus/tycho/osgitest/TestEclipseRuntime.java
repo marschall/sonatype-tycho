@@ -358,7 +358,7 @@ public class TestEclipseRuntime
         }
 
         bundles.addArtifactFile( new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() ),
-                                 file );
+                                 file, null );
     }
 
     public void addBundle( ArtifactDescriptor artifact )
@@ -368,7 +368,7 @@ public class TestEclipseRuntime
 
     public void addBundle( ArtifactKey key, File file )
     {
-        bundles.addArtifactFile( key, file );
+        bundles.addArtifactFile( key, file, null );
     }
 
 }

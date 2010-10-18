@@ -1,6 +1,7 @@
 package org.codehaus.tycho.osgitools;
 
 import java.io.File;
+import java.util.Set;
 
 import org.apache.maven.project.MavenProject;
 import org.sonatype.tycho.ArtifactDescriptor;
@@ -16,11 +17,14 @@ public class DefaultArtifactDescriptor
 
     private final MavenProject project;
 
-    public DefaultArtifactDescriptor( ArtifactKey key, File location, MavenProject project )
+    private final Set<Object> installableUnits;
+
+    public DefaultArtifactDescriptor( ArtifactKey key, File location, MavenProject project, Set<Object> installableUnits )
     {
         this.key = key;
         this.location = location;
         this.project = project;
+        this.installableUnits = installableUnits;
     }
 
     public ArtifactKey getKey()
@@ -36,6 +40,11 @@ public class DefaultArtifactDescriptor
     public MavenProject getMavenProject()
     {
         return project;
+    }
+
+    public Set<Object> getInstallableUnits()
+    {
+        return installableUnits;
     }
 
     @Override

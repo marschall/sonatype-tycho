@@ -205,7 +205,7 @@ public class GeneratePomsMojo extends AbstractMojo {
                     if ( id != null && version != null )
                     {
                         ArtifactKey key = new DefaultArtifactKey(org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue());
-    			        platform.addArtifactFile( key, dir );
+    			        platform.addArtifactFile( key, dir, null );
                     }
                     else
                     {

@@ -462,11 +462,11 @@ public class P2TargetPlatformResolver
             MavenProject otherProject = projects.get( entry.getLocation() );
             if ( otherProject != null )
             {
-                platform.addMavenProject( key, otherProject );
+                platform.addMavenProject( key, otherProject, entry.getInstallableUnits() );
             }
             else
             {
-                platform.addArtifactFile( key, entry.getLocation() );
+                platform.addArtifactFile( key, entry.getLocation(), entry.getInstallableUnits() );
             }
         }
         return platform;

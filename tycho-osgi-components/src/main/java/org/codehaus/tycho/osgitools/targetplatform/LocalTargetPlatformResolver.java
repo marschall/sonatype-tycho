@@ -74,7 +74,7 @@ public class LocalTargetPlatformResolver
     
                 platform.removeAll( key.getType(), key.getId() );
     
-                platform.addMavenProject( key, project );
+                platform.addMavenProject( key, project, null );
     
                 if ( parentDir == null || isSubdir( project.getBasedir(), parentDir ) )
                 {
@@ -100,7 +100,7 @@ public class LocalTargetPlatformResolver
 
                 if ( artifactKey != null )
                 {
-                    platform.addArtifactFile( artifactKey, plugin );
+                    platform.addArtifactFile( artifactKey, plugin, null );
                 }
             }
 
@@ -109,7 +109,7 @@ public class LocalTargetPlatformResolver
                 Feature desc = Feature.loadFeature( feature );
                 ArtifactKey key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_FEATURE, desc.getId(), desc.getVersion() );
 
-                platform.addArtifactFile( key, feature );
+                platform.addArtifactFile( key, feature, null );
             }
         }
 
@@ -152,7 +152,7 @@ public class LocalTargetPlatformResolver
                         if ( artifactKey != null )
                         {
                             platform.removeAll( artifactKey.getType(), artifactKey.getId() );
-                            platform.addMavenProject( artifactKey, dependent );
+                            platform.addMavenProject( artifactKey, dependent, null );
                             if ( getLogger().isDebugEnabled() )
                             {
                                 getLogger().debug( "Add Maven project " + artifactKey );
@@ -206,7 +206,7 @@ public class LocalTargetPlatformResolver
 
                     if ( artifactKey != null )
                     {
-                        platform.addArtifactFile( artifactKey, plugin );
+                        platform.addArtifactFile( artifactKey, plugin, null );
                         if ( getLogger().isDebugEnabled() )
                         {
                             getLogger().debug( "Add Maven artifact " + artifactKey );
