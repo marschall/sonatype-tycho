@@ -3,8 +3,8 @@ package org.codehaus.tycho.osgitools;
 import java.io.File;
 import java.util.List;
 
-import org.codehaus.tycho.ArtifactKey;
 import org.codehaus.tycho.ClasspathEntry;
+import org.sonatype.tycho.ArtifactKey;
 
 public class DefaultClasspathEntry
     implements ClasspathEntry

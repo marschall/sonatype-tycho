@@ -5,10 +5,9 @@ import java.util.ArrayList;
 import junit.framework.Assert;
 
 import org.codehaus.plexus.PlexusTestCase;
-import org.codehaus.tycho.ArtifactKey;
 import org.codehaus.tycho.ClasspathEntry;
-import org.codehaus.tycho.TychoProject;
 import org.codehaus.tycho.osgitest.TestFramework;
+import org.codehaus.tycho.osgitools.DefaultArtifactKey;
 import org.codehaus.tycho.osgitools.DefaultClasspathEntry;
 
 public class TestFrameworkTest
@@ -69,6 +68,6 @@ public class TestFrameworkTest
 
     private ClasspathEntry newDefaultClasspathEntry( String id, String version )
     {
-        return new DefaultClasspathEntry( new ArtifactKey( TychoProject.ECLIPSE_PLUGIN, id, version ), null, null );
+        return new DefaultClasspathEntry( new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id, version ), null, null );
     }
 }

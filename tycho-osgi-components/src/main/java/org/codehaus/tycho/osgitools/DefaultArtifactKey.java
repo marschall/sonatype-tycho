@@ -1,6 +1,9 @@
-package org.codehaus.tycho;
+package org.codehaus.tycho.osgitools;
 
-public class ArtifactKey
+import org.sonatype.tycho.ArtifactKey;
+
+public class DefaultArtifactKey
+    implements org.sonatype.tycho.ArtifactKey
 {
     private final String type;
 
@@ -8,7 +11,7 @@ public class ArtifactKey
 
     private final String version;
 
-    public ArtifactKey( String type, String id, String version )
+    public DefaultArtifactKey( String type, String id, String version )
     {
         this.id = id;
         this.type = type;

@@ -21,7 +21,6 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
-import org.codehaus.tycho.ArtifactKey;
 import org.codehaus.tycho.TargetPlatform;
 import org.codehaus.tycho.TargetPlatformConfiguration;
 import org.codehaus.tycho.TargetPlatformResolver;
@@ -29,8 +28,10 @@ import org.codehaus.tycho.TychoConstants;
 import org.codehaus.tycho.TychoProject;
 import org.codehaus.tycho.model.Feature;
 import org.codehaus.tycho.osgitools.BundleReader;
+import org.codehaus.tycho.osgitools.DefaultArtifactKey;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.Constants;
+import org.sonatype.tycho.ArtifactKey;
 
 /**
  * Creates target platform based on local eclipse installation.
@@ -106,7 +107,7 @@ public class LocalTargetPlatformResolver
             for ( File feature : layout.getFeatures( site ) )
             {
                 Feature desc = Feature.loadFeature( feature );
-                ArtifactKey key = new ArtifactKey( TychoProject.ECLIPSE_FEATURE, desc.getId(), desc.getVersion() );
+                ArtifactKey key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_FEATURE, desc.getId(), desc.getVersion() );
 
                 platform.addArtifactFile( key, feature );
             }
@@ -233,7 +234,7 @@ public class LocalTargetPlatformResolver
             return null;
         }
 
-        ArtifactKey key = new ArtifactKey( TychoProject.ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() );
+        ArtifactKey key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() );
         return key;
     }
 
@@ -254,7 +255,7 @@ public class LocalTargetPlatformResolver
             return null;
         }
 
-        ArtifactKey key = new ArtifactKey( TychoProject.ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() );
+        ArtifactKey key = new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() );
         return key;
     }
 

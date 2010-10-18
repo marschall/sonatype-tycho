@@ -35,7 +35,6 @@ import org.codehaus.plexus.util.cli.Arg;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.util.cli.StreamConsumer;
-import org.codehaus.tycho.ArtifactDescription;
 import org.codehaus.tycho.BundleProject;
 import org.codehaus.tycho.TargetPlatform;
 import org.codehaus.tycho.TargetPlatformResolver;
@@ -44,6 +43,8 @@ import org.codehaus.tycho.TychoProject;
 import org.codehaus.tycho.resolver.DefaultTargetPlatformResolverFactory;
 import org.codehaus.tycho.utils.PlatformPropertiesUtils;
 import org.osgi.framework.Version;
+import org.sonatype.tycho.ArtifactDescriptor;
+import org.sonatype.tycho.ArtifactKey;
 
 /**
  * @phase integration-test
@@ -361,7 +362,7 @@ public class TestMojo extends AbstractMojo {
 		}
 		getLog().debug("Using test framework " + testFramework);
 
-		for (ArtifactDescription artifact : testTargetPlatform.getArtifacts(TychoProject.ECLIPSE_PLUGIN)) {
+		for (ArtifactDescriptor artifact : testTargetPlatform.getArtifacts(ArtifactKey.TYPE_ECLIPSE_PLUGIN)) {
 		    // note that this project is added as directory structure rooted at project basedir.
 		    // project classes and test-classes are added via dev.properties file (see #createDevProperties())
 		    // all other projects are added as bundle jars.
@@ -437,7 +438,7 @@ public class TestMojo extends AbstractMojo {
     {
         Dependency ideapp = new Dependency();
         ideapp.setArtifactId( bundleId );
-        ideapp.setType( TychoProject.ECLIPSE_PLUGIN );
+        ideapp.setType( ArtifactKey.TYPE_ECLIPSE_PLUGIN );
         return ideapp;
     }
 
@@ -606,7 +607,7 @@ public class TestMojo extends AbstractMojo {
 
 	private String getTestApplication(TestEclipseRuntime testRuntime) {
 		if (useUIHarness) {
-		    ArtifactDescription systemBundle = testRuntime.getSystemBundle();
+		    ArtifactDescriptor systemBundle = testRuntime.getSystemBundle();
 		    Version osgiVersion = Version.parseVersion(systemBundle.getKey().getVersion());
 			if (osgiVersion.compareTo(VERSION_3_3_0) < 0) {
 				return "org.sonatype.tycho.surefire.osgibooter.uitest32";
@@ -619,14 +620,14 @@ public class TestMojo extends AbstractMojo {
 	}
 
 	private File getEclipseLauncher(TestEclipseRuntime testRuntime) throws IOException {
-        ArtifactDescription systemBundle = testRuntime.getSystemBundle();
+        ArtifactDescriptor systemBundle = testRuntime.getSystemBundle();
         Version osgiVersion = Version.parseVersion(systemBundle.getKey().getVersion());
 		if (osgiVersion.compareTo(VERSION_3_3_0) < 0) {
 		    throw new IllegalArgumentException("Eclipse 3.2 and earlier are not supported.");
 			//return new File(state.getTargetPlaform(), "startup.jar").getCanonicalFile();
 		} else {
 			// assume eclipse 3.3 or 3.4
-		    ArtifactDescription launcher = testRuntime.getBundle(EQUINOX_LAUNCHER, null);
+		    ArtifactDescriptor launcher = testRuntime.getBundle(EQUINOX_LAUNCHER, null);
 			if (launcher == null) {
 			    throw new IllegalArgumentException("Could not find " + EQUINOX_LAUNCHER + " bundle in the test runtime.");
 			}

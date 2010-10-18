@@ -17,6 +17,7 @@ import org.codehaus.tycho.osgitools.DefaultBundleReader;
 import org.codehaus.tycho.osgitools.OsgiBundleProject;
 import org.codehaus.tycho.testing.AbstractTychoMojoTestCase;
 import org.codehaus.tycho.testing.CompoundRuntimeException;
+import org.sonatype.tycho.ArtifactKey;
 
 public class TychoTest extends AbstractTychoMojoTestCase {
 
@@ -176,8 +177,8 @@ public class TychoTest extends AbstractTychoMojoTestCase {
         TychoProject projectType = lookup( TychoProject.class, project.getPackaging() );
         TargetPlatform platform = projectType.getTargetPlatform( project );
 
-		assertNotNull(platform.getArtifact(TychoProject.ECLIPSE_PLUGIN, "testjar", "1.0.0"));
-		assertNotNull(platform.getArtifact(TychoProject.ECLIPSE_PLUGIN, "testdir", "1.0.0"));
+		assertNotNull(platform.getArtifact(ArtifactKey.TYPE_ECLIPSE_PLUGIN, "testjar", "1.0.0"));
+		assertNotNull(platform.getArtifact(ArtifactKey.TYPE_ECLIPSE_PLUGIN, "testdir", "1.0.0"));
 
 		File cacheDir = new File( request.getLocalRepository().getBasedir(), DefaultBundleReader.CACHE_PATH );
 
@@ -195,8 +196,8 @@ public class TychoTest extends AbstractTychoMojoTestCase {
         TychoProject projectType = lookup( TychoProject.class, project.getPackaging() );
         TargetPlatform platform = projectType.getTargetPlatform( project );
 
-		assertEquals(2, platform.getArtifacts( TychoProject.ECLIPSE_PLUGIN ).size());
-		assertNotNull(platform.getArtifact(TychoProject.ECLIPSE_PLUGIN, "org.junit4.nl_ru", null));
+		assertEquals(2, platform.getArtifacts( ArtifactKey.TYPE_ECLIPSE_PLUGIN ).size());
+		assertNotNull(platform.getArtifact(ArtifactKey.TYPE_ECLIPSE_PLUGIN, "org.junit4.nl_ru", null));
 	}
 
     public void testMissingClasspathEntries()  throws Exception {

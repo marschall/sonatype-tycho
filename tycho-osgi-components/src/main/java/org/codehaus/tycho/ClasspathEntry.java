@@ -3,6 +3,8 @@ package org.codehaus.tycho;
 import java.io.File;
 import java.util.List;
 
+import org.sonatype.tycho.ArtifactKey;
+
 public interface ClasspathEntry
 {
     public static class AccessRule

@@ -3,13 +3,13 @@ package org.codehaus.tycho.osgitools;
 import java.io.File;
 
 import org.apache.maven.project.MavenProject;
-import org.codehaus.tycho.ArtifactKey;
 import org.codehaus.tycho.FeatureDescription;
 import org.codehaus.tycho.model.Feature;
 import org.codehaus.tycho.model.FeatureRef;
+import org.sonatype.tycho.ArtifactKey;
 
 public class DefaultFeatureDescription
-    extends DefaultArtifactDescription
+    extends DefaultArtifactDescriptor
     implements FeatureDescription
 {
     private Feature feature;

@@ -3,11 +3,11 @@ package org.codehaus.tycho.osgitools;
 import java.io.File;
 
 import org.apache.maven.project.MavenProject;
-import org.codehaus.tycho.ArtifactDescription;
-import org.codehaus.tycho.ArtifactKey;
+import org.sonatype.tycho.ArtifactDescriptor;
+import org.sonatype.tycho.ArtifactKey;
 
-public class DefaultArtifactDescription
-    implements ArtifactDescription
+public class DefaultArtifactDescriptor
+    implements ArtifactDescriptor
 {
 
     private final ArtifactKey key;
@@ -16,7 +16,7 @@ public class DefaultArtifactDescription
 
     private final MavenProject project;
 
-    public DefaultArtifactDescription( ArtifactKey key, File location, MavenProject project )
+    public DefaultArtifactDescriptor( ArtifactKey key, File location, MavenProject project )
     {
         this.key = key;
         this.location = location;

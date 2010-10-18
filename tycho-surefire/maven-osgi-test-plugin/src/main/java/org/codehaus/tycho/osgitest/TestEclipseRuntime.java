@@ -19,15 +19,15 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.codehaus.tycho.ArtifactDescription;
-import org.codehaus.tycho.ArtifactKey;
 import org.codehaus.tycho.TychoConstants;
-import org.codehaus.tycho.TychoProject;
 import org.codehaus.tycho.osgitools.BundleReader;
+import org.codehaus.tycho.osgitools.DefaultArtifactKey;
 import org.codehaus.tycho.osgitools.targetplatform.DefaultTargetPlatform;
 import org.eclipse.osgi.framework.adaptor.FrameworkAdaptor;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.Constants;
+import org.sonatype.tycho.ArtifactDescriptor;
+import org.sonatype.tycho.ArtifactKey;
 
 public class TestEclipseRuntime
     extends AbstractLogEnabled
@@ -114,7 +114,7 @@ public class TestEclipseRuntime
     {
         Map<ArtifactKey, File> effective = new LinkedHashMap<ArtifactKey, File>();
 
-        for ( ArtifactDescription artifact : bundles.getArtifacts( TychoProject.ECLIPSE_PLUGIN ) )
+        for ( ArtifactDescriptor artifact : bundles.getArtifacts( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN ) )
         {
             ArtifactKey key = artifact.getKey();
             File file = artifact.getLocation();
@@ -180,7 +180,7 @@ public class TestEclipseRuntime
             if ( url != null )
             {
                 File file;
-                ArtifactDescription desc = getBundle( url, null );
+                ArtifactDescriptor desc = getBundle( url, null );
                 if ( desc != null )
                 {
                     url = "file:" + desc.getLocation().getAbsolutePath().replace( '\\', '/' );
@@ -235,14 +235,14 @@ public class TestEclipseRuntime
         this.location = location;
     }
 
-    public ArtifactDescription getBundle( String symbolicName, String highestVersion )
+    public ArtifactDescriptor getBundle( String symbolicName, String highestVersion )
     {
-        return bundles.getArtifact( TychoProject.ECLIPSE_PLUGIN, symbolicName, highestVersion );
+        return bundles.getArtifact( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, symbolicName, highestVersion );
     }
 
-    public ArtifactDescription getSystemBundle()
+    public ArtifactDescriptor getSystemBundle()
     {
-        return bundles.getArtifact( TychoProject.ECLIPSE_PLUGIN, FrameworkAdaptor.FRAMEWORK_SYMBOLICNAME, null );
+        return bundles.getArtifact( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, FrameworkAdaptor.FRAMEWORK_SYMBOLICNAME, null );
     }
 
     public void setPlexusContainer( PlexusContainer plexus )
@@ -332,7 +332,7 @@ public class TestEclipseRuntime
     private String copySystemBundle()
         throws IOException
     {
-        ArtifactDescription bundle = getSystemBundle();
+        ArtifactDescriptor bundle = getSystemBundle();
         File srcFile = bundle.getLocation();
         File dstFile = new File( location, "plugins/" + srcFile.getName() );
         FileUtils.copyFileIfModified( srcFile, dstFile );
@@ -354,14 +354,14 @@ public class TestEclipseRuntime
 
         if ( override )
         {
-            bundles.removeAll( TychoProject.ECLIPSE_PLUGIN, id[0].getValue() );
+            bundles.removeAll( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue() );
         }
 
-        bundles.addArtifactFile( new ArtifactKey( TychoProject.ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() ),
+        bundles.addArtifactFile( new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(), version[0].getValue() ),
                                  file );
     }
 
-    public void addBundle( ArtifactDescription artifact )
+    public void addBundle( ArtifactDescriptor artifact )
     {
         bundles.addArtifact( artifact );
     }
