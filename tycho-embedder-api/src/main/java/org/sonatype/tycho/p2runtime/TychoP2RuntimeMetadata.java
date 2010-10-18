@@ -1,4 +1,4 @@
-package org.sonatype.tycho.p2;
+package org.sonatype.tycho.p2runtime;
 
 import java.io.File;
 import java.util.List;
