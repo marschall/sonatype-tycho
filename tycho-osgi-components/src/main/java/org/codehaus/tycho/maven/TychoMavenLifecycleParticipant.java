@@ -13,9 +13,9 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.tycho.osgitools.BundleReader;
 import org.codehaus.tycho.osgitools.DefaultBundleReader;
-import org.codehaus.tycho.resolver.DefaultTychoDependencyResolver;
 import org.sonatype.tycho.equinox.embedder.EquinoxEmbedder;
 import org.sonatype.tycho.equinox.embedder.EquinoxRuntimeLocator;
+import org.sonatype.tycho.resolver.TychoDependencyResolver;
 
 @Component( role = AbstractMavenLifecycleParticipant.class, hint = "TychoMavenLifecycleListener" )
 public class TychoMavenLifecycleParticipant
@@ -37,7 +37,7 @@ public class TychoMavenLifecycleParticipant
     private BundleReader bundleReader;
 
     @Requirement
-    private DefaultTychoDependencyResolver resolver;
+    private TychoDependencyResolver resolver;
 
     @Requirement( role = TychoLifecycleParticipant.class )
     private List<TychoLifecycleParticipant> lifecycleParticipants;
