@@ -10,7 +10,6 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.testing.SilentLog;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.Logger;
-import org.codehaus.tycho.ClasspathEntry;
 import org.codehaus.tycho.TargetPlatform;
 import org.codehaus.tycho.TychoProject;
 import org.codehaus.tycho.osgitools.DefaultBundleReader;
@@ -18,6 +17,7 @@ import org.codehaus.tycho.osgitools.OsgiBundleProject;
 import org.codehaus.tycho.testing.AbstractTychoMojoTestCase;
 import org.codehaus.tycho.testing.CompoundRuntimeException;
 import org.sonatype.tycho.ArtifactKey;
+import org.sonatype.tycho.classpath.ClasspathEntry;
 
 public class TychoTest extends AbstractTychoMojoTestCase {
 

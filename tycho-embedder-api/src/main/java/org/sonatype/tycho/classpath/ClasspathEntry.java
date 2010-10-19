@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import org.apache.maven.project.MavenProject;
+import org.sonatype.tycho.ArtifactKey;
 
 /**
  * @author igor
@@ -21,6 +22,11 @@ public interface ClasspathEntry
 
         public boolean isDiscouraged();
     }
+
+    /** 
+     * ArtifactKey that corresponds to this classpath entry. Not null.
+     */
+    public ArtifactKey getArtifactKey();
 
     /**
      * MavenProject that corresponds to this classpath entry or null, if no such project.

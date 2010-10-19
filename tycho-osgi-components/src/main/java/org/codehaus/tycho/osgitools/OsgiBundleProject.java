@@ -18,7 +18,6 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.tycho.ArtifactDependencyVisitor;
 import org.codehaus.tycho.ArtifactDependencyWalker;
 import org.codehaus.tycho.BundleProject;
-import org.codehaus.tycho.ClasspathEntry;
 import org.codehaus.tycho.PluginDescription;
 import org.codehaus.tycho.TargetEnvironment;
 import org.codehaus.tycho.TargetPlatform;
@@ -38,6 +37,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.sonatype.tycho.ArtifactDescriptor;
 import org.sonatype.tycho.ArtifactKey;
+import org.sonatype.tycho.classpath.ClasspathEntry;
 
 @Component( role = TychoProject.class, hint = org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN )
 public class OsgiBundleProject
@@ -155,8 +155,8 @@ public class OsgiBundleProject
 
         // project itself
         ArtifactDescriptor artifact = platform.getArtifact( project.getBasedir() );
-        classpath.add( new DefaultClasspathEntry( artifact.getKey(), getProjectClasspath( artifact, project, null ),
-                                                  null ) );
+        classpath.add( new DefaultClasspathEntry( project, artifact.getKey(), getProjectClasspath( artifact, project,
+                                                                                                   null ), null ) );
 
         // build.properties/jars.extra.classpath
         addExtraClasspathEntries( classpath, project, platform );
@@ -177,7 +177,7 @@ public class OsgiBundleProject
                 locations = getBundleClasspath( otherArtifact, null );
             }
 
-            classpath.add( new DefaultClasspathEntry( otherArtifact.getKey(), locations, entry.rules ) );
+            classpath.add( new DefaultClasspathEntry( otherProject, otherArtifact.getKey(), locations, entry.rules ) );
         }
         project.setContextValue( TychoConstants.CTX_ECLIPSE_PLUGIN_CLASSPATH, classpath );
 
@@ -323,7 +323,8 @@ public class OsgiBundleProject
                     {
                         locations = getBundleClasspath( matchingBundle, path );
                     }
-                    classpath.add( new DefaultClasspathEntry( matchingBundle.getKey(), locations, null ) );
+                    classpath.add( new DefaultClasspathEntry( matchingBundle.getMavenProject(),
+                                                              matchingBundle.getKey(), locations, null ) );
                 }
                 else
                 {
