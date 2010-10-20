@@ -71,7 +71,6 @@ public abstract class AbstractP2MetadataMojo
      */
     private boolean compressRepository;
 
-
     /** @component */
     private EquinoxRuntimeLocator equinoxLocator;
 
@@ -183,7 +182,15 @@ public abstract class AbstractP2MetadataMojo
         throws MojoFailureException
     {
         // XXX dirty hack
-        File p2location = equinoxLocator.getRuntimeLocations().get( 0 );
+        File p2location;
+        try
+        {
+            p2location = equinoxLocator.getRuntimeLocations().get( 0 );
+        }
+        catch ( Exception e )
+        {
+            throw new MojoFailureException( "Could not locate Tycho P2 runtime", e );
+        }
         DirectoryScanner ds = new DirectoryScanner();
         ds.setBasedir( p2location );
         ds.setIncludes( new String[] { "plugins/org.eclipse.equinox.launcher_*.jar" } );

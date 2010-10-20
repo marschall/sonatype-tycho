@@ -1,7 +1,6 @@
 package org.sonatype.tycho.equinox.embedder;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +20,9 @@ public class DefaultEquinoxEmbedder
     extends AbstractLogEnabled
     implements EquinoxEmbedder
 {
+    @Requirement( role = EquinoxLifecycleListener.class )
+    private Map<String, EquinoxLifecycleListener> lifecycleListeners;
+
     @Requirement
     private EquinoxRuntimeLocator equinoxLocator;
 
@@ -28,8 +30,6 @@ public class DefaultEquinoxEmbedder
 
     private String[] nonFrameworkArgs;
 
-    private List<Runnable> afterStartCallbacks = new ArrayList<Runnable>();
-    
     public synchronized void start()
         throws Exception
     {
@@ -143,9 +143,9 @@ public class DefaultEquinoxEmbedder
         }
 
         frameworkContext.ungetService( packageAdminRef );
-        for ( Runnable callback  : afterStartCallbacks )
+        for ( EquinoxLifecycleListener listener : lifecycleListeners.values() )
         {
-            callback.run();
+            listener.afterFrameworkStarted( this );
         }
     }
 
@@ -220,12 +220,10 @@ public class DefaultEquinoxEmbedder
 
     public void setNonFrameworkArgs( String[] args )
     {
+        if ( frameworkContext != null )
+        {
+            throw new IllegalStateException( "Cannot set non-framework arguments after the framework was started" );
+        }
         nonFrameworkArgs = args;
     }
-
-    public void registerAfterStartCallback( Runnable callback )
-    {
-        this.afterStartCallbacks.add( callback );
-    }
-    
 }

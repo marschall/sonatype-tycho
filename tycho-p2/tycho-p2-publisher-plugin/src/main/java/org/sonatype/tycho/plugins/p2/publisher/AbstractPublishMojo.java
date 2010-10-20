@@ -110,6 +110,7 @@ public abstract class AbstractPublishMojo
     }
 
     private Commandline createOSGiCommandline( String applicationId )
+        throws MojoFailureException
     {
         File equinoxLauncher = getEquinoxLauncher( equinoxLocator );
         return createOSGiCommandline( applicationId, equinoxLauncher );
@@ -150,8 +151,18 @@ public abstract class AbstractPublishMojo
     }
 
     private static File getEquinoxLauncher( EquinoxRuntimeLocator equinoxLocator )
+        throws MojoFailureException
     {
-        File p2location = equinoxLocator.getRuntimeLocations().get(0);
+        // XXX dirty hack
+        File p2location;
+        try
+        {
+            p2location = equinoxLocator.getRuntimeLocations().get( 0 );
+        }
+        catch ( Exception e )
+        {
+            throw new MojoFailureException( "Could not locate Tycho P2 runtime", e );
+        }
         DirectoryScanner ds = new DirectoryScanner();
         ds.setBasedir( p2location );
         ds.setIncludes( new String[] { "plugins/org.eclipse.equinox.launcher_*.jar" } );
