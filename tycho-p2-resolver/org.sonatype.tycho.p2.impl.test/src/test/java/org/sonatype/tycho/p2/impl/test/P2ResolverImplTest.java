@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.sonatype.tycho.p2.impl.resolver.DuplicateReactorIUsException;
 import org.sonatype.tycho.p2.impl.resolver.P2ResolverImpl;
@@ -273,5 +274,34 @@ public class P2ResolverImplTest
         Assert.assertEquals( 1, result.getArtifacts().size() );
         Assert.assertEquals( 2, result.getArtifacts().iterator().next().getInstallableUnits().size() );
         Assert.assertEquals( 0, result.getInstallableUnits().size() ); // currently, this does not include project's IUs
+    }
+
+    @Test @Ignore
+    public void sourceBundle()
+        throws Exception
+    {
+        P2ResolverImpl impl = new P2ResolverImpl();
+        impl.setRepositoryCache( new P2RepositoryCacheImpl() );
+        impl.setLocalRepositoryLocation( getLocalRepositoryLocation() );
+        impl.setLogger( new NullP2Logger() );
+
+        File feature = new File( "resources/sourcebundles/feature01" ).getCanonicalFile();
+        String featureId = "org.sonatype.tycho.p2.impl.resolver.test.feature01";
+        String featureVersion = "1.0.0-SNAPSHOT";
+        impl.addMavenProject( new ArtifactMock( feature, featureId, featureId, featureVersion,
+                                                 P2Resolver.TYPE_ECLIPSE_FEATURE ) );
+
+        File bundle = new File( "resources/sourcebundles/bundle01" ).getCanonicalFile();
+        String bundleId = "org.sonatype.tycho.p2.impl.resolver.test.bundle01";
+        String bundleVersion = "1.0.0-SNAPSHOT";
+        impl.addMavenProject( new ArtifactMock( bundle, bundleId, bundleId, bundleVersion,
+                                                 P2Resolver.TYPE_ECLIPSE_PLUGIN, ".source", true ) );
+
+        impl.setEnvironments( getEnvironments() );
+
+        List<P2ResolutionResult> results = impl.resolveProject( feature );
+
+        impl.stop();
+        
     }
 }
