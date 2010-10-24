@@ -25,8 +25,7 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.FileUtils;
-import org.sonatype.tycho.equinox.embedder.EquinoxRuntimeLocator;
-import org.sonatype.tycho.p2runtime.TychoP2RuntimeMetadata;
+import org.sonatype.tycho.equinox.EquinoxRuntimeLocator;
 
 @Component( role = EquinoxRuntimeLocator.class )
 public class TychoP2RuntimeLocator
@@ -61,6 +60,12 @@ public class TychoP2RuntimeLocator
     {
         MavenSession session = buildContext.getSession();
 
+        return getRuntimeLocations( session );
+    }
+
+    public List<File> getRuntimeLocations( MavenSession session )
+        throws MavenExecutionException
+    {
         List<File> locations = new ArrayList<File>();
 
         TychoP2RuntimeMetadata framework = runtimeMetadata.get( TychoP2RuntimeMetadata.HINT_FRAMEWORK );
@@ -80,13 +85,7 @@ public class TychoP2RuntimeLocator
         return locations;
     }
 
-    /**
-     * @param locations
-     * @param session
-     * @param framework
-     * @throws MavenExecutionException
-     */
-    void addRuntime( List<File> locations, MavenSession session, TychoP2RuntimeMetadata framework )
+    private void addRuntime( List<File> locations, MavenSession session, TychoP2RuntimeMetadata framework )
         throws MavenExecutionException
     {
         for ( Dependency dependency : framework.getRuntimeArtifacts() )

@@ -14,6 +14,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.sonatype.tycho.equinox.EquinoxRuntimeLocator;
 
 @Component( role = EquinoxEmbedder.class )
 public class DefaultEquinoxEmbedder

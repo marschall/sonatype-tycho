@@ -6,7 +6,6 @@ import java.util.List;
 import org.apache.maven.model.Dependency;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.tycho.utils.TychoVersion;
-import org.sonatype.tycho.p2runtime.TychoP2RuntimeMetadata;
 
 @Component( role = TychoP2RuntimeMetadata.class, hint = TychoP2RuntimeMetadata.HINT_FRAMEWORK )
 public class DefaultTychoP2RuntimeMetadata

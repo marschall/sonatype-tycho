@@ -1,4 +1,4 @@
-package org.sonatype.tycho.p2runtime;
+package org.sonatype.tycho.p2.facade.internal;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ public interface TychoP2RuntimeMetadata
     public static final String NOEMBED = "Tycho-NoEmbed";
 
     /**
-     * Returns list of Maven artifacts that will be installed into Tycho P2 runtime. Artifacts with packaging=zip will
+     * Returns list of Maven artifacts that will be installed in Tycho P2 runtime. Artifacts with packaging=zip will
      * be assumed to have eclipse installation layout and will be unpacked before used. Artifacts with packaging=jar are
      * assumed to be OSGi bundles and will be added to the runtime as is.
      */

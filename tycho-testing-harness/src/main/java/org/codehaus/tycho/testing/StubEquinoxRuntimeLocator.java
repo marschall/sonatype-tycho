@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import org.codehaus.plexus.component.annotations.Component;
-import org.sonatype.tycho.equinox.embedder.EquinoxRuntimeLocator;
+import org.sonatype.tycho.equinox.EquinoxRuntimeLocator;
 
 @Component( role = EquinoxRuntimeLocator.class, hint = "stub" )
 public class StubEquinoxRuntimeLocator

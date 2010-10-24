@@ -1,4 +1,4 @@
-package org.sonatype.tycho.equinox.embedder;
+package org.sonatype.tycho.equinox;
 
 import java.io.File;
 import java.util.List;

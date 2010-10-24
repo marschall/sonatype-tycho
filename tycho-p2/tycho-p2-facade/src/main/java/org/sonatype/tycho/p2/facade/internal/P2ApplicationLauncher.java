@@ -12,7 +12,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.util.cli.StreamConsumer;
-import org.sonatype.tycho.equinox.embedder.EquinoxRuntimeLocator;
+import org.sonatype.tycho.equinox.EquinoxRuntimeLocator;
 import org.sonatype.tycho.equinox.launching.EclipseInstallation;
 import org.sonatype.tycho.equinox.launching.EquinoxLauncherFactory;
 
