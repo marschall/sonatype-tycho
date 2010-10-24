@@ -1,4 +1,4 @@
-package org.codehaus.tycho.maven;
+package org.sonatype.tycho.p2.facade.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +21,8 @@ public class DefaultTychoP2RuntimeMetadata
         String p2Version = TychoVersion.getTychoVersion();
 
         ARTIFACTS.add( newDependency( "org.sonatype.tycho", "tycho-p2-runtime", p2Version, "zip" ) );
+        ARTIFACTS.add( newDependency( "org.sonatype.tycho", "org.sonatype.tycho.p2.impl", p2Version, "jar" ) );
+        ARTIFACTS.add( newDependency( "org.sonatype.tycho", "org.sonatype.tycho.p2.maven.repository", p2Version, "jar" ) );
     }
 
     public List<Dependency> getRuntimeArtifacts()

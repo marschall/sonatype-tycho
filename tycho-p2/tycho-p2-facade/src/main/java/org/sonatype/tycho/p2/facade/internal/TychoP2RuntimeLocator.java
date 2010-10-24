@@ -1,8 +1,9 @@
-package org.codehaus.tycho.maven;
+package org.sonatype.tycho.p2.facade.internal;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,12 @@ import org.sonatype.tycho.p2runtime.TychoP2RuntimeMetadata;
 public class TychoP2RuntimeLocator
     implements EquinoxRuntimeLocator
 {
+    /**
+     * List of packages exported by org.sonatype.tycho.p2 artifact/bundle.
+     */
+    public static final String[] SYSTEM_PACKAGES_EXTRA = { "org.sonatype.tycho.p2", "org.sonatype.tycho.p2.repository",
+        "org.sonatype.tycho.p2.resolver" };
+
     @Requirement
     private Logger logger;
 
@@ -184,4 +191,8 @@ public class TychoP2RuntimeLocator
         return artifact.getFile();
     }
 
+    public List<String> getSystemPackagesExtra()
+    {
+        return Arrays.asList( SYSTEM_PACKAGES_EXTRA );
+    }
 }

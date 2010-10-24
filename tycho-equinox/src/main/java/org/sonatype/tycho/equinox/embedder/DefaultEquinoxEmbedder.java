@@ -99,6 +99,21 @@ public class DefaultEquinoxEmbedder
         // TODO specific package names
         properties.put( "org.osgi.framework.bootdelegation", "*" );
 
+        List<String> packagesExtra = equinoxLocator.getSystemPackagesExtra();
+        if ( packagesExtra != null && !packagesExtra.isEmpty() )
+        {
+            StringBuilder sb = new StringBuilder();
+            for ( String pkg : packagesExtra )
+            {
+                if ( sb.length() > 0 )
+                {
+                    sb.append( ',' );
+                }
+                sb.append( pkg );
+            }
+            properties.put( "org.osgi.framework.system.packages.extra", sb.toString() );
+        }
+
         // properties.put( "eclipse.p2.data.area", dataArea.getAbsolutePath() );
 
         // debug
