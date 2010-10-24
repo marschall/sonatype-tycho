@@ -28,8 +28,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.cli.Arg;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
@@ -45,6 +43,10 @@ import org.codehaus.tycho.utils.PlatformPropertiesUtils;
 import org.osgi.framework.Version;
 import org.sonatype.tycho.ArtifactDescriptor;
 import org.sonatype.tycho.ArtifactKey;
+import org.sonatype.tycho.equinox.launching.BundleStartLevel;
+import org.sonatype.tycho.equinox.launching.EclipseInstallation;
+import org.sonatype.tycho.equinox.launching.EquinoxLauncher;
+import org.sonatype.tycho.equinox.launching.EquinoxLauncherFactory;
 
 /**
  * @phase integration-test
@@ -53,10 +55,6 @@ import org.sonatype.tycho.ArtifactKey;
  * @requiresDependencyResolution runtime
  */
 public class TestMojo extends AbstractMojo {
-
-	private static final Version VERSION_3_3_0 = Version.parseVersion("3.3.0");
-
-    private static final String EQUINOX_LAUNCHER = "org.eclipse.equinox.launcher";
 
     /**
 	 * @parameter default-value="${project.build.directory}/work"
@@ -283,18 +281,15 @@ public class TestMojo extends AbstractMojo {
     private ResolutionErrorHandler resolutionErrorHandler;
 
     /** @component */
-    private PlexusContainer plexus;
-
-    /** @component */
-    private Logger logger;
-
-    /** @component */
     private DefaultTargetPlatformResolverFactory targetPlatformResolverLocator;
     
     /**
      * @component role="org.codehaus.tycho.TychoProject"
      */
     private Map<String, TychoProject> projectTypes;
+
+    /** @component */
+    private EquinoxLauncherFactory launcherFactory;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (skip || skipExec) {
@@ -343,11 +338,8 @@ public class TestMojo extends AbstractMojo {
 
 		work.mkdirs();
 
-		TestEclipseRuntime testRuntime = new TestEclipseRuntime();
-		testRuntime.enableLogging(logger);
-		testRuntime.setLocation(work);
-		testRuntime.setPlexusContainer(plexus);
-		testRuntime.setBundlesToExplode(getBundlesToExplode());
+		EclipseInstallation testRuntime = launcherFactory.createEclipseInstallation(work);
+		testRuntime.addBundlesToExplode(getBundlesToExplode());
 		testRuntime.addFrameworkExtensions(getFrameworkExtensions());
         if (bundleStartLevel != null) {
             for (BundleStartLevel level : bundleStartLevel) {
@@ -386,7 +378,7 @@ public class TestMojo extends AbstractMojo {
 		    testRuntime.addBundle(file, true);
 		}
 
-        testRuntime.create();
+        testRuntime.createInstallation();
 
 		createDevProperties();
 		createSurefireProperties(projectType.getArtifactKey(project).getId(), testFramework);
@@ -421,7 +413,7 @@ public class TestMojo extends AbstractMojo {
 	    ArrayList<Dependency> result = new ArrayList<Dependency>();
 
         result.add( newBundleDependency( "org.eclipse.osgi" ) );
-        result.add( newBundleDependency( EQUINOX_LAUNCHER ) );
+        result.add( newBundleDependency( EquinoxLauncher.EQUINOX_LAUNCHER ) );
 	    if ( useUIHarness )
 	    {
             result.add( newBundleDependency( "org.eclipse.ui.ide.application" ) );
@@ -497,7 +489,7 @@ public class TestMojo extends AbstractMojo {
 		return sb.toString();
 	}
 
-	private boolean runTest(TestEclipseRuntime testRuntime, String testBundle) throws MojoExecutionException {
+	private boolean runTest(EclipseInstallation testRuntime, String testBundle) throws MojoExecutionException {
 		int result;
 
 		try {
@@ -543,7 +535,7 @@ public class TestMojo extends AbstractMojo {
             }
 
 			cli.addArguments(new String[] {
-				"-jar", getEclipseLauncher(testRuntime).getAbsolutePath(),
+				"-jar", testRuntime.getLauncherJar().getAbsolutePath(),
 			});
 
 			if (getLog().isDebugEnabled() || showEclipseLog) {
@@ -605,33 +597,17 @@ public class TestMojo extends AbstractMojo {
 		return result == 0;
 	}
 
-	private String getTestApplication(TestEclipseRuntime testRuntime) {
+	private String getTestApplication(EquinoxLauncher testRuntime) {
 		if (useUIHarness) {
 		    ArtifactDescriptor systemBundle = testRuntime.getSystemBundle();
 		    Version osgiVersion = Version.parseVersion(systemBundle.getKey().getVersion());
-			if (osgiVersion.compareTo(VERSION_3_3_0) < 0) {
+			if (osgiVersion.compareTo(EquinoxLauncher.EQUINOX_VERSION_3_3_0) < 0) {
 				return "org.sonatype.tycho.surefire.osgibooter.uitest32";
 			} else {
 				return "org.sonatype.tycho.surefire.osgibooter.uitest";
 			}
 		} else {
 			return "org.sonatype.tycho.surefire.osgibooter.headlesstest";
-		}
-	}
-
-	private File getEclipseLauncher(TestEclipseRuntime testRuntime) throws IOException {
-        ArtifactDescriptor systemBundle = testRuntime.getSystemBundle();
-        Version osgiVersion = Version.parseVersion(systemBundle.getKey().getVersion());
-		if (osgiVersion.compareTo(VERSION_3_3_0) < 0) {
-		    throw new IllegalArgumentException("Eclipse 3.2 and earlier are not supported.");
-			//return new File(state.getTargetPlaform(), "startup.jar").getCanonicalFile();
-		} else {
-			// assume eclipse 3.3 or 3.4
-		    ArtifactDescriptor launcher = testRuntime.getBundle(EQUINOX_LAUNCHER, null);
-			if (launcher == null) {
-			    throw new IllegalArgumentException("Could not find " + EQUINOX_LAUNCHER + " bundle in the test runtime.");
-			}
-			return launcher.getLocation().getCanonicalFile();
 		}
 	}
 

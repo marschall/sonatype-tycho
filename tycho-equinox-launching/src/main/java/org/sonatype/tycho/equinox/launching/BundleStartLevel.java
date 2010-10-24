@@ -1,4 +1,4 @@
-package org.codehaus.tycho.osgitest;
+package org.sonatype.tycho.equinox.launching;
 
 public class BundleStartLevel
 {

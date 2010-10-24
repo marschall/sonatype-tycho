@@ -434,6 +434,7 @@
     <module>tycho-osgi-components</module>
     <module>tycho-testing-harness</module>
     <module>tycho-maven-plugin</module>
+    <module>tycho-equinox-launching</module>
 
     <module>tycho-compiler-jdt</module>
     <module>maven-osgi-compiler-plugin</module>
