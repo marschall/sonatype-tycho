@@ -114,21 +114,31 @@ public class OsgiBundleProject
     @Override
     public void setupProject( MavenSession session, MavenProject project )
     {
-        Manifest mf = bundleReader.loadManifest( project.getBasedir() );
+        ArtifactKey key = readArtifactKey( project.getBasedir() );
+
+        if ( key == null )
+        {
+            throw new IllegalArgumentException( "Missing bundle symbolic name or version for project "
+                + project.toString() );
+        }
+        
+        project.setContextValue( CTX_ARTIFACT_KEY, key );
+    }
+
+    public ArtifactKey readArtifactKey( File location )
+    {
+        Manifest mf = bundleReader.loadManifest( location );
 
         ManifestElement[] id = bundleReader.parseHeader( Constants.BUNDLE_SYMBOLICNAME, mf );
         ManifestElement[] version = bundleReader.parseHeader( Constants.BUNDLE_VERSION, mf );
 
         if ( id == null || version == null )
         {
-            throw new IllegalArgumentException( "Missing bundle symbolic name or version for project "
-                + project.toString() );
+            return null;
         }
 
-        ArtifactKey key =
-            new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(),
-                                    version[0].getValue() );
-        project.setContextValue( CTX_ARTIFACT_KEY, key );
+        return new DefaultArtifactKey( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN, id[0].getValue(),
+                                version[0].getValue() );
     }
 
     public String getManifestValue( String key, MavenProject project )

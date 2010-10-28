@@ -1,216 +1,88 @@
 package org.sonatype.tycho.equinox.launching.internal;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.jar.Manifest;
 
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.StringUtils;
-import org.codehaus.tycho.TychoConstants;
-import org.eclipse.osgi.util.ManifestElement;
-import org.osgi.framework.Constants;
-import org.sonatype.tycho.ArtifactDescriptor;
-import org.sonatype.tycho.ArtifactKey;
-import org.sonatype.tycho.equinox.launching.EclipseInstallation;
+import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.Logger;
+import org.codehaus.plexus.util.cli.CommandLineException;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
+import org.codehaus.plexus.util.cli.Commandline;
+import org.codehaus.plexus.util.cli.StreamConsumer;
+import org.sonatype.tycho.equinox.launching.EquinoxLauncher;
+import org.sonatype.tycho.equinox.launching.EquinoxLaunchingException;
+import org.sonatype.tycho.launching.LaunchConfiguration;
 
+@Component( role = EquinoxLauncher.class )
 public class DefaultEquinoxLauncher
-    extends AbstractEquinoxLauncher
-    implements EclipseInstallation
+    implements EquinoxLauncher
 {
-    private final List<File> frameworkExtensions = new ArrayList<File>();
+    @Requirement
+    private Logger log;
 
-    private final File location;
-
-    private final Set<String> bundlesToExplode = new HashSet<String>();
-
-    public DefaultEquinoxLauncher( PlexusContainer plexus, File location )
+    public int execute( LaunchConfiguration configuration, int forkedProcessTimeoutInSeconds )
+        throws EquinoxLaunchingException
     {
-        super( plexus );
-        this.location = location;
-    }
+        Commandline cli = new Commandline();
 
-    public void createInstallation()
-    {
-        Map<ArtifactKey, File> effective = new LinkedHashMap<ArtifactKey, File>();
-
-        for ( ArtifactDescriptor artifact : bundles.getArtifacts( org.sonatype.tycho.ArtifactKey.TYPE_ECLIPSE_PLUGIN ) )
+        String executable = System.getProperty( "java.home" ) + File.separator + "bin" + File.separator + "java";
+        if ( File.separatorChar == '\\' )
         {
-            ArtifactKey key = artifact.getKey();
-            File file = artifact.getLocation();
-            Manifest mf = manifestReader.loadManifest( file );
+            executable = executable + ".exe";
+        }
+        cli.setExecutable( executable );
+        
+        cli.setWorkingDirectory( configuration.getWorkingDirectory() );
 
-            boolean directoryShape = bundlesToExplode.contains( key.getId() ) || manifestReader.isDirectoryShape( mf );
+        cli.addArguments( configuration.getVMArguments() );
 
-            if ( !file.isDirectory() && directoryShape )
-            {
-                String filename = key.getId() + "_" + key.getVersion();
-                File unpacked = new File( location, "plugins/" + filename );
+        cli.addArguments( new String[] { "-jar", getCanonicalPath( configuration.getLauncherJar() ) } );
 
-                unpacked.mkdirs();
+        cli.addArguments( configuration.getProgramArguments() );
 
-                unpack( file, unpacked );
-
-                effective.put( key, unpacked );
-            }
-            else
-            {
-                effective.put( key, file );
-            }
+        for ( Map.Entry<String, String> var : configuration.getEnvironment().entrySet() )
+        {
+            cli.addEnvironment( var.getKey(), var.getValue() );
         }
 
+        log.info( "Command line:\n\t" + cli.toString() );
+
+        StreamConsumer out = new StreamConsumer()
+        {
+            public void consumeLine( String line )
+            {
+                System.out.println( line );
+            }
+        };
+        StreamConsumer err = new StreamConsumer()
+        {
+            public void consumeLine( String line )
+            {
+                System.err.println( line );
+            }
+        };
         try
         {
-            location.mkdirs();
-            
-            Properties p = new Properties();
+            return CommandLineUtils.executeCommandLine( cli, out, err, forkedProcessTimeoutInSeconds );
+        }
+        catch ( CommandLineException e )
+        {
+            throw new EquinoxLaunchingException( e );
+        }
+    }
 
-            String newOsgiBundles;
-
-            // if ( shouldUseP2() )
-            // {
-            // createBundlesInfoFile( location );
-            // createPlatformXmlFile( location );
-            // newOsgiBundles = "org.eclipse.equinox.simpleconfigurator@1:start";
-            // }
-            // else if ( shouldUseUpdateManager() )
-            // {
-            // createPlatformXmlFile( location );
-            // newOsgiBundles =
-            // "org.eclipse.equinox.common@2:start, org.eclipse.update.configurator@3:start, org.eclipse.core.runtime@start";
-            // }
-            // else
-            /* use plain equinox */{
-                newOsgiBundles = toOsgiBundles( effective );
-            }
-
-            p.setProperty( "osgi.bundles", newOsgiBundles );
-
-            // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=234069
-            p.setProperty( "osgi.bundlefile.limit", "100" );
-
-            // @see SimpleConfiguratorConstants#PROP_KEY_EXCLUSIVE_INSTALLATION
-            // p.setProperty("org.eclipse.equinox.simpleconfigurator.exclusiveInstallation", "false");
-
-            p.setProperty( "osgi.install.area", "file:" + location.getAbsolutePath().replace( '\\', '/' ) );
-            p.setProperty( "osgi.configuration.cascaded", "false" );
-            p.setProperty( "osgi.framework", "org.eclipse.osgi" );
-            p.setProperty( "osgi.bundles.defaultStartLevel", "4" );
-
-            // fix osgi.framework
-            String url = p.getProperty( "osgi.framework" );
-            if ( url != null )
-            {
-                File file;
-                ArtifactDescriptor desc = getBundle( url, null );
-                if ( desc != null )
-                {
-                    url = "file:" + desc.getLocation().getAbsolutePath().replace( '\\', '/' );
-                }
-                else if ( url.startsWith( "file:" ) )
-                {
-                    String path = url.substring( "file:".length() );
-                    file = new File( path );
-                    if ( !file.isAbsolute() )
-                    {
-                        file = new File( location, path );
-                    }
-                    url = "file:" + file.getAbsolutePath().replace( '\\', '/' );
-                }
-            }
-            if ( url != null )
-            {
-                p.setProperty( "osgi.framework", url );
-            }
-
-            if ( !frameworkExtensions.isEmpty() )
-            {
-                Collection<String> bundleNames = unpackFrameworkExtensions( frameworkExtensions );
-                p.setProperty( "osgi.framework", copySystemBundle() );
-                p.setProperty( "osgi.framework.extensions", StringUtils.join( bundleNames.iterator(), "," ) );
-            }
-
-            new File( location, "configuration" ).mkdir();
-            FileOutputStream fos = new FileOutputStream( new File( location, TychoConstants.CONFIG_INI_PATH ) );
-            try
-            {
-                p.store( fos, null );
-            }
-            finally
-            {
-                fos.close();
-            }
+    private String getCanonicalPath( File file )
+        throws EquinoxLaunchingException
+    {
+        try
+        {
+            return file.getCanonicalPath();
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Exception creating test eclipse runtime", e );
+            throw new EquinoxLaunchingException( e );
         }
-    }
-
-    public File getLocation()
-    {
-        return location;
-    }
-
-    public void addBundlesToExplode( List<String> bundlesToExplode )
-    {
-        this.bundlesToExplode.addAll(bundlesToExplode);
-    }
-
-    public void addFrameworkExtensions( List<File> frameworkExtensions )
-    {
-        this.frameworkExtensions.addAll( frameworkExtensions );
-    }
-
-    private List<String> unpackFrameworkExtensions( Collection<File> frameworkExtensions )
-        throws IOException
-    {
-        List<String> bundleNames = new ArrayList<String>();
-
-        for ( File bundleFile : frameworkExtensions )
-        {
-            Manifest mf = manifestReader.loadManifest( bundleFile );
-            ManifestElement[] id = manifestReader.parseHeader( Constants.BUNDLE_SYMBOLICNAME, mf );
-            ManifestElement[] version = manifestReader.parseHeader( Constants.BUNDLE_VERSION, mf );
-
-            if ( id == null || version == null )
-            {
-                throw new IOException( "Invalid OSGi manifest in bundle " + bundleFile );
-            }
-
-            bundleNames.add( id[0].getValue() );
-
-            File bundleDir = new File( location, "plugins/" + id[0].getValue() + "_" + version[0].getValue() );
-            if ( bundleFile.isFile() )
-            {
-                unpack( bundleFile, bundleDir );
-            }
-            else
-            {
-                FileUtils.copyDirectoryStructure( bundleFile, bundleDir );
-            }
-        }
-
-        return bundleNames;
-    }
-
-    private String copySystemBundle()
-        throws IOException
-    {
-        ArtifactDescriptor bundle = getSystemBundle();
-        File srcFile = bundle.getLocation();
-        File dstFile = new File( location, "plugins/" + srcFile.getName() );
-        FileUtils.copyFileIfModified( srcFile, dstFile );
-
-        return "file:" + dstFile.getAbsolutePath().replace( '\\', '/' );
     }
 }

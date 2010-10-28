@@ -58,8 +58,9 @@ import org.sonatype.tycho.classpath.ClasspathEntry;
 import org.sonatype.tycho.classpath.ClasspathEntry.AccessRule;
 import org.sonatype.tycho.classpath.JavaCompilerConfiguration;
 import org.sonatype.tycho.classpath.SourcepathEntry;
+import org.sonatype.tycho.runtime.Adaptable;
 
-public abstract class AbstractOsgiCompilerMojo extends AbstractCompilerMojo implements JavaCompilerConfiguration {
+public abstract class AbstractOsgiCompilerMojo extends AbstractCompilerMojo implements JavaCompilerConfiguration, Adaptable {
 
     public static final String RULE_SEPARATOR = File.pathSeparator;
 
@@ -473,5 +474,14 @@ public abstract class AbstractOsgiCompilerMojo extends AbstractCompilerMojo impl
             }
         }
         return DEFAULT_TARGET_VERSION;
+    }
+
+    public <T> T getAdapter( Class<T> adapter )
+    {
+        if ( adapter.isAssignableFrom( JavaCompilerConfiguration.class ) )
+        {
+            return adapter.cast( this );
+        }
+        return null;
     }
 }

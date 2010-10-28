@@ -3,10 +3,13 @@ package org.sonatype.tycho.classpath;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
+import org.sonatype.tycho.runtime.Adaptable;
 
 /**
  * Computes and returns Tycho java compiler configuration, i.e. compile or test-compile mojos of
  * org.sonatype.tycho:maven-osgi-compiler-plugin.
+ * 
+ * Use {@link Adaptable#getAdapter(Class)} on compile or test-compile mojos to get instance of this intergace
  * 
  * @author igor
  * @noimplement This interface is not intended to be implemented by clients.

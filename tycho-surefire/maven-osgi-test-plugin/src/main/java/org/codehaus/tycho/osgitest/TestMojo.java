@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,24 +30,26 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.cli.Arg;
-import org.codehaus.plexus.util.cli.CommandLineUtils;
-import org.codehaus.plexus.util.cli.Commandline;
-import org.codehaus.plexus.util.cli.StreamConsumer;
 import org.codehaus.tycho.BundleProject;
 import org.codehaus.tycho.TargetPlatform;
 import org.codehaus.tycho.TargetPlatformResolver;
 import org.codehaus.tycho.TychoConstants;
 import org.codehaus.tycho.TychoProject;
+import org.codehaus.tycho.osgitools.OsgiBundleProject;
 import org.codehaus.tycho.resolver.DefaultTargetPlatformResolverFactory;
 import org.codehaus.tycho.utils.PlatformPropertiesUtils;
 import org.osgi.framework.Version;
 import org.sonatype.tycho.ArtifactDescriptor;
 import org.sonatype.tycho.ArtifactKey;
 import org.sonatype.tycho.equinox.launching.BundleStartLevel;
-import org.sonatype.tycho.equinox.launching.EclipseInstallation;
+import org.sonatype.tycho.equinox.launching.DefaultEquinoxInstallationDescription;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallation;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallationDescription;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallationFactory;
 import org.sonatype.tycho.equinox.launching.EquinoxLauncher;
-import org.sonatype.tycho.equinox.launching.EquinoxLauncherFactory;
+import org.sonatype.tycho.equinox.launching.internal.EquinoxLaunchConfiguration;
+import org.sonatype.tycho.launching.LaunchConfiguration;
+import org.sonatype.tycho.runtime.Adaptable;
 
 /**
  * @phase integration-test
@@ -54,7 +57,7 @@ import org.sonatype.tycho.equinox.launching.EquinoxLauncherFactory;
  * @requiresProject true
  * @requiresDependencyResolution runtime
  */
-public class TestMojo extends AbstractMojo {
+public class TestMojo extends AbstractMojo implements Adaptable {
 
     /**
 	 * @parameter default-value="${project.build.directory}/work"
@@ -289,9 +292,17 @@ public class TestMojo extends AbstractMojo {
     private Map<String, TychoProject> projectTypes;
 
     /** @component */
-    private EquinoxLauncherFactory launcherFactory;
+    private EquinoxInstallationFactory installationFactory;
 
-	public void execute() throws MojoExecutionException, MojoFailureException {
+    /** @component */
+    private EquinoxLauncher launcher;
+
+    /**
+     * @component role="org.codehaus.tycho.TychoProject" role-hint="eclipse-plugin"
+     */
+    private OsgiBundleProject osgiBundle;
+
+    public void execute() throws MojoExecutionException, MojoFailureException {
 		if (skip || skipExec) {
 			getLog().info("Skipping tests");
 			return;
@@ -319,7 +330,22 @@ public class TestMojo extends AbstractMojo {
 			}
 		}
 
-		TargetPlatformResolver platformResolver = targetPlatformResolverLocator.lookupPlatformResolver( project );
+		EquinoxInstallation testRuntime = createEclipseInstallation(false);
+
+		String testBundle = null;
+		boolean succeeded = runTest(testRuntime, testBundle);
+		
+		if (succeeded) {
+			getLog().info("All tests passed!");
+		} else {
+	        throw new MojoFailureException("There are test failures.\n\nPlease refer to " + reportsDirectory + " for the individual test results.");
+		}
+	}
+
+    private EquinoxInstallation createEclipseInstallation(boolean includeReactorProjects)
+        throws MojoExecutionException
+    {
+        TargetPlatformResolver platformResolver = targetPlatformResolverLocator.lookupPlatformResolver( project );
 
 		ArrayList<Dependency> dependencies = new ArrayList<Dependency>(); 
 
@@ -338,7 +364,7 @@ public class TestMojo extends AbstractMojo {
 
 		work.mkdirs();
 
-		EclipseInstallation testRuntime = launcherFactory.createEclipseInstallation(work);
+		EquinoxInstallationDescription testRuntime = new DefaultEquinoxInstallationDescription();
 		testRuntime.addBundlesToExplode(getBundlesToExplode());
 		testRuntime.addFrameworkExtensions(getFrameworkExtensions());
         if (bundleStartLevel != null) {
@@ -375,25 +401,26 @@ public class TestMojo extends AbstractMojo {
 
 		Set<File> surefireBundles = getSurefirePlugins(testFramework);
 		for (File file : surefireBundles) {
-		    testRuntime.addBundle(file, true);
+		    testRuntime.addBundle(getBundleArtifacyKey(file), file, true);
 		}
 
-        testRuntime.createInstallation();
-
-		createDevProperties();
+		createDevProperties(includeReactorProjects);
 		createSurefireProperties(projectType.getArtifactKey(project).getId(), testFramework);
 
 		reportsDirectory.mkdirs();
+        return installationFactory.createInstallation(testRuntime, work);
+    }
 
-		String testBundle = null;
-		boolean succeeded = runTest(testRuntime, testBundle);
-		
-		if (succeeded) {
-			getLog().info("All tests passed!");
-		} else {
-	        throw new MojoFailureException("There are test failures.\n\nPlease refer to " + reportsDirectory + " for the individual test results.");
-		}
-	}
+    private ArtifactKey getBundleArtifacyKey( File file )
+        throws MojoExecutionException
+    {
+        ArtifactKey key = osgiBundle.readArtifactKey( file );
+        if ( key == null )
+        {
+            throw new MojoExecutionException( "Not an OSGi bundle " + file.getAbsolutePath() );
+        }
+        return key;
+    }
 
     private MavenProject getTestSuite( String symbolicName )
     {
@@ -413,7 +440,7 @@ public class TestMojo extends AbstractMojo {
 	    ArrayList<Dependency> result = new ArrayList<Dependency>();
 
         result.add( newBundleDependency( "org.eclipse.osgi" ) );
-        result.add( newBundleDependency( EquinoxLauncher.EQUINOX_LAUNCHER ) );
+        result.add( newBundleDependency( EquinoxInstallationDescription.EQUINOX_LAUNCHER ) );
 	    if ( useUIHarness )
 	    {
             result.add( newBundleDependency( "org.eclipse.ui.ide.application" ) );
@@ -489,119 +516,102 @@ public class TestMojo extends AbstractMojo {
 		return sb.toString();
 	}
 
-	private boolean runTest(EclipseInstallation testRuntime, String testBundle) throws MojoExecutionException {
-		int result;
+    private boolean runTest( EquinoxInstallation testRuntime, String testBundle )
+        throws MojoExecutionException
+    {
+        int result;
 
-		try {
-			String workspace = new File(work, "data").getAbsolutePath();
-			
-			FileUtils.deleteDirectory(workspace);
+        try
+        {
+            File workspace = new File( work, "data" ).getAbsoluteFile();
 
-			Commandline cli = new Commandline();
+            FileUtils.deleteDirectory( workspace );
 
-			cli.setWorkingDirectory(project.getBasedir());
+            LaunchConfiguration cli = createCommandLine( testRuntime, workspace );
 
-			String executable = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-			if (File.separatorChar == '\\') {
-				executable = executable + ".exe";
-			}
-			cli.setExecutable(executable);
+            getLog().info( "Expected eclipse log file: " + new File( workspace, ".metadata/.log" ).getCanonicalPath() );
 
-			if (debugPort > 0) {
-				cli.addArguments(new String[] {
-					"-Xdebug",
-					"-Xrunjdwp:transport=dt_socket,address=" + debugPort + ",server=y,suspend=y" });
-			}
-			cli.addArguments(new String[] {
-				"-Dosgi.noShutdown=false",
-			});
+            result = launcher.execute( cli, forkedProcessTimeoutInSeconds );
+        }
+        catch ( Exception e )
+        {
+            throw new MojoExecutionException( "Error while executing platform", e );
+        }
 
-            Properties properties = (Properties) project.getContextValue(TychoConstants.CTX_MERGED_PROPERTIES);
-            cli.addArguments(new String[] {
-                "-Dosgi.os=" + PlatformPropertiesUtils.getOS(properties),
-                "-Dosgi.ws=" + PlatformPropertiesUtils.getWS(properties),
-                "-Dosgi.arch=" + PlatformPropertiesUtils.getArch(properties),
-            });
+        return result == 0;
+    }
 
-			if (argLine != null) {
-				Arg arg = cli.createArg();
-				arg.setLine(argLine);
-			}
+    LaunchConfiguration createCommandLine( EquinoxInstallation testRuntime, File workspace )
+        throws MalformedURLException
+    {
+        EquinoxLaunchConfiguration cli = new EquinoxLaunchConfiguration( testRuntime );
 
-            if (systemProperties != null) {
-                for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
-                    cli.createArg().setValue("-D" + entry.getKey() + "=" + entry.getValue());
-                }
+        cli.setWorkingDirectory( project.getBasedir() );
+
+        if ( debugPort > 0 )
+        {
+            cli.addVMArguments( "-Xdebug", "-Xrunjdwp:transport=dt_socket,address=" + debugPort + ",server=y,suspend=y" );
+        }
+
+        cli.addVMArguments( "-Dosgi.noShutdown=false" );
+
+        Properties properties = (Properties) project.getContextValue( TychoConstants.CTX_MERGED_PROPERTIES );
+        cli.addVMArguments( "-Dosgi.os=" + PlatformPropertiesUtils.getOS( properties ), //
+                            "-Dosgi.ws=" + PlatformPropertiesUtils.getWS( properties ), //
+                            "-Dosgi.arch=" + PlatformPropertiesUtils.getArch( properties ) );
+
+        if ( argLine != null )
+        {
+            cli.addVMArguments( true, argLine );
+        }
+
+        if ( systemProperties != null )
+        {
+            for ( Map.Entry<String, String> entry : systemProperties.entrySet() )
+            {
+                cli.addVMArguments( true, "-D" + entry.getKey() + "=" + entry.getValue() );
             }
+        }
 
-			cli.addArguments(new String[] {
-				"-jar", testRuntime.getLauncherJar().getAbsolutePath(),
-			});
+        if ( getLog().isDebugEnabled() || showEclipseLog )
+        {
+            cli.addProgramArguments( "-debug", "-consolelog" );
+        }
 
-			if (getLog().isDebugEnabled() || showEclipseLog) {
-				cli.addArguments(new String[] {
-					"-debug", "-consolelog",
-				});
-			}
-			cli.addArguments(new String[] {
-				"-data", workspace,
-				"-dev", devProperties.toURI().toURL().toExternalForm(),
-				"-install", testRuntime.getLocation().getAbsolutePath(),
-				"-configuration", new File(work, "configuration").getAbsolutePath(),
-				"-application",	getTestApplication(testRuntime),
-				"-testproperties", surefireProperties.getAbsolutePath(), 
-			});
-			if (application != null) {
-                cli.addArguments(new String[] {
-                    "-testApplication", application,
-                });
-			}
-			if (product != null) {
-                cli.addArguments(new String[] {
-                    "-product", product,
-                });
-			}
-            if (useUIHarness && !useUIThread) {
-                cli.addArguments(new String[] {
-                    "-nouithread",
-                });
-            }
-			if (appArgLine != null) {
-                Arg appArg = cli.createArg();
-                appArg.setLine(appArgLine);
-			}
-			if (environmentVariables != null) {
-				for (Map.Entry<String, String> entry : environmentVariables.entrySet()) {
-					cli.addEnvironment(entry.getKey(), entry.getValue());
-				}
-			}
+        cli.addProgramArguments( "-data", workspace.getAbsolutePath(), //
+                                 "-dev", devProperties.toURI().toURL().toExternalForm(), //
+                                 "-install", testRuntime.getLocation().getAbsolutePath(), //
+                                 "-configuration", new File( work, "configuration" ).getAbsolutePath(), //
+                                 "-application", getTestApplication( testRuntime.getInstallationDescription() ), //
+                                 "-testproperties", surefireProperties.getAbsolutePath() );
+        if ( application != null )
+        {
+            cli.addProgramArguments( "-testApplication", application );
+        }
+        if ( product != null )
+        {
+            cli.addProgramArguments( "-product", product );
+        }
+        if ( useUIHarness && !useUIThread )
+        {
+            cli.addProgramArguments( "-nouithread" );
+        }
+        if ( appArgLine != null )
+        {
+            cli.addProgramArguments( true, appArgLine );
+        }
+        if ( environmentVariables != null )
+        {
+            cli.addEnvironmentVariables( environmentVariables );
+        }
+        return cli;
+    }
 
-			getLog().info("Expected eclipse log file: " + new File(workspace, ".metadata/.log").getCanonicalPath());
-			getLog().info("Command line:\n\t" + cli.toString());
-
-			StreamConsumer out = new StreamConsumer() {
-				public void consumeLine(String line) {
-					System.out.println(line);
-				}
-			};
-			StreamConsumer err = new StreamConsumer() {
-				public void consumeLine(String line) {
-					System.err.println(line);
-				}
-			};
-			result = CommandLineUtils.executeCommandLine(cli, out, err,	forkedProcessTimeoutInSeconds);
-		} catch (Exception e) {
-			throw new MojoExecutionException("Error while executing platform", e);
-		}
-
-		return result == 0;
-	}
-
-	private String getTestApplication(EquinoxLauncher testRuntime) {
+	private String getTestApplication(EquinoxInstallationDescription testRuntime) {
 		if (useUIHarness) {
 		    ArtifactDescriptor systemBundle = testRuntime.getSystemBundle();
 		    Version osgiVersion = Version.parseVersion(systemBundle.getKey().getVersion());
-			if (osgiVersion.compareTo(EquinoxLauncher.EQUINOX_VERSION_3_3_0) < 0) {
+			if (osgiVersion.compareTo(EquinoxInstallationDescription.EQUINOX_VERSION_3_3_0) < 0) {
 				return "org.sonatype.tycho.surefire.osgibooter.uitest32";
 			} else {
 				return "org.sonatype.tycho.surefire.osgibooter.uitest";
@@ -649,21 +659,24 @@ public class TestMojo extends AbstractMojo {
 		return result;
 	}
 
-	private void createDevProperties() throws MojoExecutionException {
+	private void createDevProperties( boolean includeReactorProjects ) throws MojoExecutionException {
 		Properties dev = new Properties();
-//		dev.put("@ignoredot@", "true");
-//		for (MavenProject otherProject : session.getProjects()) {
-//			if ("eclipse-test-plugin".equals(otherProject.getPackaging())) {
-//	            TychoProject projectType = projectTypes.get(otherProject.getPackaging());
-//				dev.put(projectType.getArtifactKey(otherProject).getId(), getBuildOutputDirectories(otherProject));
-//			} else if ("eclipse-plugin".equals(otherProject.getPackaging())) {
-//                TychoProject projectType = projectTypes.get(otherProject.getPackaging());
-//				File file = otherProject.getArtifact().getFile();
-//				if (file == null || file.isDirectory()) {
-//					dev.put(projectType.getArtifactKey(otherProject).getId(), getBuildOutputDirectories(otherProject));
-//				}
-//			}
-//		}
+
+        if ( includeReactorProjects )
+        {
+            // this is needed for IDE integration, where we want to use reactor project output folders
+            dev.put( "@ignoredot@", "true" );
+            for ( MavenProject otherProject : session.getProjects() )
+            {
+                if ( "eclipse-test-plugin".equals( otherProject.getPackaging() )
+                    || "eclipse-plugin".equals( otherProject.getPackaging() ) )
+                {
+                    TychoProject projectType = projectTypes.get( otherProject.getPackaging() );
+                    dev.put( projectType.getArtifactKey( otherProject ).getId(),
+                             getBuildOutputDirectories( otherProject ) );
+                }
+            }
+        }
 
 		TychoProject projectType = projectTypes.get(project.getPackaging());
 		dev.put(projectType.getArtifactKey(project).getId(), getBuildOutputDirectories(project));
@@ -762,4 +775,31 @@ public class TestMojo extends AbstractMojo {
         return files;
     }
 
+    public <T> T getAdapter(Class<T> adapter)
+    {
+        if ( adapter.equals( LaunchConfiguration.class ) )
+        {
+            return adapter.cast( createTestLaunchConfiguration() );
+        }
+        return null;
+    }
+
+    private LaunchConfiguration createTestLaunchConfiguration()
+    {
+        try
+        {
+            EquinoxInstallation testRuntime = createEclipseInstallation(true);
+    
+            return createCommandLine( testRuntime, work );
+        }
+        catch ( MalformedURLException e )
+        {
+            getLog().error( e );
+        }
+        catch ( MojoExecutionException e )
+        {
+            getLog().error( e );
+        }
+        return null;
+    }
 }

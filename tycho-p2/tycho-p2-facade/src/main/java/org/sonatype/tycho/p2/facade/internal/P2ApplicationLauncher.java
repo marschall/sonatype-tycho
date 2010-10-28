@@ -9,12 +9,17 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
-import org.codehaus.plexus.util.cli.StreamConsumer;
+import org.codehaus.tycho.TychoProject;
+import org.codehaus.tycho.osgitools.OsgiBundleProject;
+import org.sonatype.tycho.ArtifactKey;
 import org.sonatype.tycho.equinox.EquinoxRuntimeLocator;
-import org.sonatype.tycho.equinox.launching.EclipseInstallation;
-import org.sonatype.tycho.equinox.launching.EquinoxLauncherFactory;
+import org.sonatype.tycho.equinox.launching.DefaultEquinoxInstallationDescription;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallation;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallationDescription;
+import org.sonatype.tycho.equinox.launching.EquinoxInstallationFactory;
+import org.sonatype.tycho.equinox.launching.EquinoxLauncher;
+import org.sonatype.tycho.equinox.launching.internal.EquinoxLaunchConfiguration;
 
 /**
  * Convenience wrapper around {@link Commandline} to run Eclipse applications from tycho-p2-runtime
@@ -28,10 +33,16 @@ public class P2ApplicationLauncher
     private Logger logger;
 
     @Requirement
-    private EquinoxLauncherFactory launcherFactory;
+    private EquinoxInstallationFactory installationFactory;
+
+    @Requirement
+    private EquinoxLauncher launcher;
 
     @Requirement
     private EquinoxRuntimeLocator runtimeLocator;
+
+    @Requirement( role = TychoProject.class, hint = ArtifactKey.TYPE_ECLIPSE_PLUGIN )
+    private OsgiBundleProject osgiBundle;
 
     private File workingDirectory;
 
@@ -75,7 +86,7 @@ public class P2ApplicationLauncher
 
             try
             {
-                EclipseInstallation installation = launcherFactory.createEclipseInstallation( installationFolder );
+                EquinoxInstallationDescription description = new DefaultEquinoxInstallationDescription();
 
                 List<File> locations = runtimeLocator.getRuntimeLocations();
 
@@ -85,62 +96,35 @@ public class P2ApplicationLauncher
                     {
                         for ( File file : new File( location, "plugins" ).listFiles() )
                         {
-                            installation.addBundle( file, false );
+                            addBundle( description, file );
                         }
                     }
                     else
                     {
-                        installation.addBundle( location, false );
+                        addBundle( description, location );
                     }
                 }
 
-                installation.createInstallation();
+                EquinoxInstallation installation =
+                    installationFactory.createInstallation( description, installationFolder );
 
-                Commandline cli = new Commandline();
-
-                cli.setWorkingDirectory( workingDirectory );
-
-                String executable =
-                    System.getProperty( "java.home" ) + File.separator + "bin" + File.separator + "java";
-                if ( File.separatorChar == '\\' )
-                {
-                    executable = executable + ".exe";
-                }
-                cli.setExecutable( executable );
-
-                cli.addArguments( new String[] { "-jar", installation.getLauncherJar().getCanonicalPath(), } );
+                EquinoxLaunchConfiguration launchConfiguration = new EquinoxLaunchConfiguration( installation );
+                launchConfiguration.setWorkingDirectory( workingDirectory );
 
                 // logging
 
                 if ( logger.isDebugEnabled() )
                 {
-                    cli.addArguments( new String[] { "-debug", "-consoleLog" } );
+                    launchConfiguration.addProgramArguments( "-debug", "-consoleLog" );
                 }
 
                 // application and application arguments
 
-                cli.addArguments( new String[] { "-nosplash", "-application", applicationName } );
+                launchConfiguration.addProgramArguments( "-nosplash", "-application", applicationName );
 
-                cli.addArguments( args.toArray( new String[args.size()] ) );
+                launchConfiguration.addProgramArguments( true, args.toArray( new String[args.size()] ) );
 
-                logger.info( "Command line:\n\t" + cli.toString() );
-
-                StreamConsumer out = new StreamConsumer()
-                {
-                    public void consumeLine( String line )
-                    {
-                        System.out.println( line );
-                    }
-                };
-                StreamConsumer err = new StreamConsumer()
-                {
-                    public void consumeLine( String line )
-                    {
-                        System.err.println( line );
-                    }
-                };
-
-                return CommandLineUtils.executeCommandLine( cli, out, err, forkedProcessTimeoutInSeconds );
+                return launcher.execute( launchConfiguration, forkedProcessTimeoutInSeconds );
             }
             finally
             {
@@ -151,6 +135,15 @@ public class P2ApplicationLauncher
         {
             // TODO better exception?
             throw new RuntimeException( e );
+        }
+    }
+
+    private void addBundle( EquinoxInstallationDescription description, File file )
+    {
+        ArtifactKey key = osgiBundle.readArtifactKey( file );
+        if ( key != null )
+        {
+            description.addBundle( key, file );
         }
     }
 
