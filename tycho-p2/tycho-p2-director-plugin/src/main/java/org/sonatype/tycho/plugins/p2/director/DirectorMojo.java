@@ -10,8 +10,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.tycho.TargetEnvironment;
 import org.codehaus.tycho.TargetPlatform;
 import org.sonatype.tycho.equinox.EquinoxServiceFactory;
-import org.sonatype.tycho.p2.DirectorApplicationWrapper;
 import org.sonatype.tycho.p2.facade.P2MetadataRepositoryWriter;
+import org.sonatype.tycho.p2.tools.director.DirectorApplicationWrapper;
 
 /**
  * @phase package
@@ -53,7 +53,13 @@ public final class DirectorMojo
                 try
                 {
                     String targetRepositoryUrl = materializeRepository( getTargetPlatform(), getBuildDirectory() );
+
                     File destination = getProductMaterializeDirectory( product, env );
+                    String rootFolder = product.getRootFolder();
+                    if (rootFolder != null && !rootFolder.isEmpty()) {
+                        destination = new File( destination, rootFolder );
+                    }
+
                     String[] args =
                         new String[] {
                             "-metadatarepository",
